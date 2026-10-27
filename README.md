@@ -138,7 +138,7 @@ uv run python -m pytest tests/integration -v     # 9 tests: builds and starts th
 
 The stack tests run `promtool` on the config and on 13 alert scenarios (including ones that must stay silent), send traffic, run both jobs against the live stack, check that the drift and performance alerts fire, run every dashboard query through Grafana, and then break and restore the service.
 
-`.github/workflows/ci.yml` runs the checks and then the stack tests on every pull request. It has been linted with `actionlint` but not yet run on GitHub, because this repo has no remote.
+`.github/workflows/ci.yml` runs the checks and then the stack tests on every pull request. It passes `actionlint` and has run on GitHub: the first run, on a pull request, found one bug that only showed on Linux (a generated file was written with Windows line endings), which is fixed, and both jobs pass since.
 
 A manual checklist for the parts a test cannot see (the rendered dashboard) is in [docs/MANUAL_CHECKLIST.md](docs/MANUAL_CHECKLIST.md). The owner has viewed the dashboard and approved how it looks; the checklist itself has not been worked through, and there are no dashboard screenshots yet.
 
