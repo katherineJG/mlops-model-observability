@@ -256,8 +256,12 @@ def main(argv: list[str] | None = None) -> int:
         "thresholds": asdict(cfg),
         **asdict(result),
     }
-    (args.out / f"{stem}.json").write_text(json.dumps(document, indent=2, default=float) + "\n")
-    (args.out / f"{stem}.md").write_text(format_markdown(result, start, end), encoding="utf-8")
+    (args.out / f"{stem}.json").write_text(
+        json.dumps(document, indent=2, default=float) + "\n", encoding="utf-8", newline="\n"
+    )
+    (args.out / f"{stem}.md").write_text(
+        format_markdown(result, start, end), encoding="utf-8", newline="\n"
+    )
     print(f"{result.status}: {args.out / stem}.json")
     if args.pushgateway:
         from monitoring.metrics_export import push_performance
