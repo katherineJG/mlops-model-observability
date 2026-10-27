@@ -21,15 +21,14 @@ Status is `PASS`, `FAIL` or `NOT VERIFIED`, with evidence. Nothing is marked PAS
 |---|---|---|
 | A new contributor can follow the README from a clean environment | PASS (see the README row for the limits) | Fresh-clone run described above. |
 | The documented happy path works end to end | PASS | Same run: service, scrape, simulation, both jobs, push, alerts, dashboard provisioning. |
-| Automated tests and quality checks pass in the available environment | PASS (locally) | Fresh clone: ruff, format check, mypy strict and 150 tests; 9 stack tests with `RUN_STACK_TESTS=1`. Not yet run in CI. |
+| Automated tests and quality checks pass in the available environment | PASS (locally) | Fresh clone: ruff, format check, mypy strict and 150 tests; 9 stack tests with `RUN_STACK_TESTS=1`. Also passes in CI on a Linux runner (next row). |
 | At least one meaningful failure scenario is demonstrated | PASS | Live error burst and recovery in the stack tests, plus five seeded simulations (`docs/RUNBOOK.md`). |
 | Architecture, configuration, security assumptions, limitations and operational recovery are documented | PASS (unreviewed by anyone else) | `docs/ARCHITECTURE.md`, `README.md`, `docs/RUNBOOK.md`; the local-only Grafana credentials and loopback-only ports are called out. |
-| CI runs the agreed checks on pull requests | NOT VERIFIED | `.github/workflows/ci.yml` is written (checks, then Docker stack tests) and passes `actionlint`. There is no GitHub remote, so it has never run. Expect to fix small Linux-runner differences on the first run. |
+| CI runs the agreed checks on pull requests | PASS (one pull request, one repository) | `.github/workflows/ci.yml` passes `actionlint` and ran on pull request #1 on a GitHub Linux runner. The first run failed one test: the reference check compares freshly built files with committed ones byte for byte, and the committed JSON had Windows line endings. The fix makes every generated text file write `\n` on any platform. The next run passed both jobs: `checks` (ruff, format check, mypy strict, 150 tests) and `stack` (9 Docker tests in 213 s, confirmed as run and not skipped). It has not yet run on a push to the default branch, and the repository is private, so the run is not publicly visible. |
 | No secrets or private data are committed | PASS (scan, not an audit) | Searched tracked files for key, token, password and private-key patterns and for personal paths: the only hit is the documented fixed Grafana password for the loopback-only demo, plus deliberate fake values in tests. All data is synthetic. |
 | All acceptance criteria have evidence-backed statuses | Done | All ten criteria above are marked PASS with their limits stated. For the Grafana criterion the queries and data are verified by test and the look was approved by the owner; the full manual checklist and screenshots are not done. |
 
 ## Still open
 
 - **Dashboard checklist and screenshots:** the look is approved, but `docs/MANUAL_CHECKLIST.md` has not been worked through and there are no screenshots. Optional now; worth doing before the project is shown to others.
-- **CI on GitHub:** needs a remote. The first run may need small fixes.
 - **Real data:** all data, including labels, is synthetic.

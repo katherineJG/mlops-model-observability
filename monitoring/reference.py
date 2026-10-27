@@ -42,7 +42,10 @@ def build_reference(out_dir: Path, model_dir: Path) -> Path:
         "csv_sha256": hashlib.sha256(csv_path.read_bytes()).hexdigest(),
         "synthetic": True,
     }
-    (out_dir / f"{VERSION}.json").write_text(json.dumps(provenance, indent=2) + "\n")
+    # newline="\n": the bytes must not depend on the platform (the reference check compares them)
+    (out_dir / f"{VERSION}.json").write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     return csv_path
 
 

@@ -50,5 +50,7 @@ class JsonlSink:
         with self._lock:
             self.directory.mkdir(parents=True, exist_ok=True)
             for day, lines in by_day.items():
-                with (self.directory / f"{day}.jsonl").open("a", encoding="utf-8") as f:
+                with (self.directory / f"{day}.jsonl").open(
+                    "a", encoding="utf-8", newline="\n"
+                ) as f:
                     f.writelines(lines)

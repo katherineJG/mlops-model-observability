@@ -169,7 +169,9 @@ def main(argv: list[str] | None = None) -> int:
         "thresholds": asdict(cfg),
         **asdict(result),
     }
-    (args.out / f"{stem}.json").write_text(json.dumps(document, indent=2, default=float) + "\n")
+    (args.out / f"{stem}.json").write_text(
+        json.dumps(document, indent=2, default=float) + "\n", encoding="utf-8", newline="\n"
+    )
     if result.status in ("drift", "no_drift"):
         write_html(reference, window.frame, features, args.out / f"{stem}.html")
     print(f"{result.status}: {args.out / stem}.json")
