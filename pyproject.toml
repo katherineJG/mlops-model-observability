@@ -1,0 +1,69 @@
+[project]
+name = "mlops-model-observability"
+version = "0.1.0"
+description = "Observability and drift detection for an ML inference service"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "uvicorn>=0.32",
+    "scikit-learn==1.9.1",  # must match the version that wrote models/churn-v1/model.joblib
+    "joblib==1.6.0",
+    "numpy>=2.0",
+    "pandas>=2.2,<3",  # evidently 0.7.23 fails to import under pandas 3.1.0; revisit on upgrade
+    "prometheus-client>=0.21",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pandas-stubs",
+    "pyyaml>=6",
+    "types-pyyaml",
+]
+# Offline drift job only; kept out of the service image (Dockerfile syncs with --no-default-groups).
+monitoring = ["evidently>=0.7.23", "scipy>=1.18.1"]
+
+[tool.uv]
+default-groups = ["dev", "monitoring"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]  # monitoring/ runs from the repo root with `python -m monitoring.<module>`
+
+[tool.ruff]
+line-length = 100
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Only third-party deprecation noise is silenced; a warning raised by this project's own code still shows.
+filterwarnings = [
+    "ignore::DeprecationWarning:litestar.*",  # pulled in by evidently
+    "ignore::DeprecationWarning:evidently.*",
+    # Raised while Python compiles evidently's own source on the first import in a fresh environment.
+    "ignore::SyntaxWarning:.*evidently.*",
+    "ignore:Using .httpx. with .starlette.testclient. is deprecated",  # not a DeprecationWarning subclass
+    # Raised while unpickling models/churn-v1/model.joblib, which was written against an older NumPy.
+    # It goes away when the artifact is re-exported (which also needs manifest.json updated).
+    "ignore:numpy.core is deprecated:DeprecationWarning",
+]
+markers = ["integration: needs Docker; set RUN_STACK_TESTS=1 to run"]
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "joblib.*", "scipy.*", "evidently.*"]
+ignore_missing_imports = true

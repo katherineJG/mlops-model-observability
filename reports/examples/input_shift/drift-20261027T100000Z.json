@@ -1,0 +1,157 @@
+{
+  "window": {
+    "start": "2026-10-27T10:00:00+00:00",
+    "end": "2026-10-27T11:00:00+00:00"
+  },
+  "reference": {
+    "version": "reference-v1",
+    "rows": 5000,
+    "columns": [
+      "gender",
+      "senior_citizen",
+      "partner",
+      "tenure_months",
+      "contract",
+      "internet_service",
+      "payment_method",
+      "paperless_billing",
+      "monthly_charges",
+      "total_charges",
+      "churn",
+      "churn_probability"
+    ],
+    "generator": "monitoring.synthetic.generate (copy of Project 01 generate_synthetic)",
+    "seed": 42,
+    "n_rows": 5000,
+    "equals": "Project 01 data/raw/raw.csv feature and churn columns, row for row (compared when this reference was created; customer_id is deliberately not kept)",
+    "model_id": "churn-v1",
+    "model_version": "1",
+    "model_sha256": "d45a06e125e2986242955ffcd6a1b5e59b6cb1f8fe0a86c301a55e280f9a614d",
+    "csv_sha256": "76d3587aef7d2a78e42986d772ef1c2a02e8fc4d57b696d2030ec3ae9075dbd2",
+    "synthetic": true
+  },
+  "malformed_lines": 0,
+  "thresholds": {
+    "window_hours": 1.0,
+    "min_samples": 200,
+    "alpha": 0.01,
+    "drift_share_threshold": 0.3,
+    "range_warn_fraction": 0.01,
+    "unseen_warn_fraction": 0.01,
+    "missing_warn_fraction": 0.05,
+    "retention_days": 7,
+    "min_labels": 300,
+    "auc_drop_threshold": 0.08
+  },
+  "status": "drift",
+  "reference_rows": 5000,
+  "current_rows": 500,
+  "columns": [
+    {
+      "column": "senior_citizen",
+      "test": "chi_square",
+      "statistic": 2.9944857905297324,
+      "effect_size": 0.023333494421421255,
+      "p_value": 0.08354843249244301,
+      "p_adjusted": 0.8354843249244301,
+      "drifted": false
+    },
+    {
+      "column": "tenure_months",
+      "test": "ks_2samp",
+      "statistic": 0.6516,
+      "effect_size": 0.6516,
+      "p_value": 7.391580882301483e-187,
+      "p_adjusted": 7.391580882301483e-186,
+      "drifted": true
+    },
+    {
+      "column": "monthly_charges",
+      "test": "ks_2samp",
+      "statistic": 0.34240000000000004,
+      "effect_size": 0.34240000000000004,
+      "p_value": 6.033698815234344e-48,
+      "p_adjusted": 6.033698815234343e-47,
+      "drifted": true
+    },
+    {
+      "column": "total_charges",
+      "test": "ks_2samp",
+      "statistic": 0.37179999999999996,
+      "effect_size": 0.37179999999999996,
+      "p_value": 1.0240402485857818e-56,
+      "p_adjusted": 1.0240402485857818e-55,
+      "drifted": true
+    },
+    {
+      "column": "gender",
+      "test": "chi_square",
+      "statistic": 2.938330699215485,
+      "effect_size": 0.023113674422555717,
+      "p_value": 0.08650008430608763,
+      "p_adjusted": 0.8650008430608763,
+      "drifted": false
+    },
+    {
+      "column": "partner",
+      "test": "chi_square",
+      "statistic": 5.185271635632682,
+      "effect_size": 0.030704668391372085,
+      "p_value": 0.022779111265818684,
+      "p_adjusted": 0.22779111265818686,
+      "drifted": false
+    },
+    {
+      "column": "contract",
+      "test": "chi_square",
+      "statistic": 190.3856886126545,
+      "effect_size": 0.186052626285563,
+      "p_value": 4.552741593031089e-42,
+      "p_adjusted": 4.5527415930310894e-41,
+      "drifted": true
+    },
+    {
+      "column": "internet_service",
+      "test": "chi_square",
+      "statistic": 5.287637039048326,
+      "effect_size": 0.031006266343341648,
+      "p_value": 0.07108929475633205,
+      "p_adjusted": 0.7108929475633206,
+      "drifted": false
+    },
+    {
+      "column": "payment_method",
+      "test": "chi_square",
+      "statistic": 1.012607195721526,
+      "effect_size": 0.01356872872534843,
+      "p_value": 0.7982014247702278,
+      "p_adjusted": 1.0,
+      "drifted": false
+    },
+    {
+      "column": "paperless_billing",
+      "test": "chi_square",
+      "statistic": 3.3305143080295205,
+      "effect_size": 0.024607886053161238,
+      "p_value": 0.0680056059391884,
+      "p_adjusted": 0.6800560593918841,
+      "drifted": false
+    }
+  ],
+  "drifted_share": 0.4,
+  "score": {
+    "column": "churn_probability",
+    "test": "ks_2samp",
+    "statistic": 0.613,
+    "effect_size": 0.613,
+    "p_value": 5.211222697445038e-163,
+    "p_adjusted": 5.211222697445038e-163,
+    "drifted": true
+  },
+  "quality": {
+    "status": "ok",
+    "rows": 500,
+    "issues": []
+  },
+  "note": "Drift means the inputs differ from the reference. It does not show that the model is less accurate; that needs labelled predictions (see the delayed-label evaluation)."
+}

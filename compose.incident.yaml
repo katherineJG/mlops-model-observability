@@ -1,0 +1,11 @@
+# Incident override: starts the service with no model, the real "alive but not ready" failure.
+#   docker compose -f compose.yaml -f compose.incident.yaml up -d service
+# /predict then returns 503 (counted as 5xx) and model_loaded is 0. Recover by recreating the
+# service from compose.yaml alone:  docker compose up -d service
+# The healthcheck is disabled here only because the normal one waits for readiness.
+services:
+  service:
+    environment:
+      MODEL_DIR: /nonexistent
+    healthcheck:
+      disable: true

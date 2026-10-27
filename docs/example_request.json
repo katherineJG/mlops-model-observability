@@ -1,0 +1,16 @@
+{
+  "instances": [
+    {
+      "senior_citizen": 0,
+      "tenure_months": 3,
+      "monthly_charges": 80.0,
+      "total_charges": 240.0,
+      "gender": "female",
+      "partner": "no",
+      "contract": "month-to-month",
+      "internet_service": "fiber",
+      "payment_method": "electronic-check",
+      "paperless_billing": "yes"
+    }
+  ]
+}

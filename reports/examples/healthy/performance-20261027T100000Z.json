@@ -1,0 +1,78 @@
+{
+  "window": {
+    "start": "2026-10-27T10:00:00+00:00",
+    "end": "2026-10-27T11:00:00+00:00"
+  },
+  "reference": {
+    "version": "reference-v1",
+    "rows": 5000,
+    "columns": [
+      "gender",
+      "senior_citizen",
+      "partner",
+      "tenure_months",
+      "contract",
+      "internet_service",
+      "payment_method",
+      "paperless_billing",
+      "monthly_charges",
+      "total_charges",
+      "churn",
+      "churn_probability"
+    ],
+    "generator": "monitoring.synthetic.generate (copy of Project 01 generate_synthetic)",
+    "seed": 42,
+    "n_rows": 5000,
+    "equals": "Project 01 data/raw/raw.csv feature and churn columns, row for row (compared when this reference was created; customer_id is deliberately not kept)",
+    "model_id": "churn-v1",
+    "model_version": "1",
+    "model_sha256": "d45a06e125e2986242955ffcd6a1b5e59b6cb1f8fe0a86c301a55e280f9a614d",
+    "csv_sha256": "76d3587aef7d2a78e42986d772ef1c2a02e8fc4d57b696d2030ec3ae9075dbd2",
+    "synthetic": true
+  },
+  "malformed_lines": 0,
+  "thresholds": {
+    "window_hours": 1.0,
+    "min_samples": 200,
+    "alpha": 0.01,
+    "drift_share_threshold": 0.3,
+    "range_warn_fraction": 0.01,
+    "unseen_warn_fraction": 0.01,
+    "missing_warn_fraction": 0.05,
+    "retention_days": 7,
+    "min_labels": 300,
+    "auc_drop_threshold": 0.08
+  },
+  "status": "ok",
+  "as_of": "2026-10-28T00:00:00+00:00",
+  "predictions": 500,
+  "labelled": 412,
+  "pending": 88,
+  "late_labels": 0,
+  "coverage": 0.824,
+  "labels_outside_window": 0,
+  "rejected_labels": 0,
+  "labelled_before_prediction": 0,
+  "median_label_delay_hours": 5.784710774861111,
+  "metrics": {
+    "roc_auc": 0.7791811983535991,
+    "precision": 0.45098039215686275,
+    "recall": 0.6699029126213593,
+    "f1": 0.5390625,
+    "positive_rate": 0.25
+  },
+  "baseline": {
+    "roc_auc": 0.8085966791002763,
+    "precision": 0.5059582919563058,
+    "recall": 0.7352092352092352,
+    "f1": 0.5994117647058823,
+    "positive_rate": 0.2772
+  },
+  "auc_drop": 0.029415480746677214,
+  "quality": {
+    "status": "ok",
+    "rows": 500,
+    "issues": []
+  },
+  "note": "Metrics use labelled predictions only, at the coverage shown. Unlabelled predictions are pending, not correct. A fall in ROC AUC against the reference baseline is the evidence of degradation; input drift alone is not."
+}

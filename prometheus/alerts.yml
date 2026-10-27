@@ -1,0 +1,85 @@
+groups:
+  - name: service
+    rules:
+      - alert: ServiceDown
+        expr: up{job="model-service"} == 0
+        for: 2m
+        labels: {severity: page}
+        annotations:
+          summary: The model service cannot be scraped.
+          description: Prometheus has failed to scrape the service for 2 minutes, so it is down or unreachable. Predictions are not being served. Check the container first.
+          runbook_url: docs/RUNBOOK.md#service-down
+
+      - alert: ModelNotLoaded
+        expr: model_loaded{job="model-service"} == 0
+        for: 2m
+        labels: {severity: page}
+        annotations:
+          summary: The service is up but has no verified model.
+          description: The service is alive but not ready, and /predict returns 503. The model artifact failed verification at startup. Read the model load failed reason in the service log.
+          runbook_url: docs/RUNBOOK.md#model-not-loaded
+
+      - alert: ServiceErrorRatioHigh
+        expr: |
+          sum(rate(http_requests_total{job="model-service", status_class="5xx"}[5m]))
+            / sum(rate(http_requests_total{job="model-service"}[5m])) > 0.02
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: More than 2% of requests are failing with a server error.
+          description: The 5xx ratio has been above 2% for 5 minutes. Callers are being hurt now. Find the failing route and the error in the service log.
+          runbook_url: docs/RUNBOOK.md#elevated-errors
+
+      - alert: ServiceLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="model-service", route="/predict"}[5m]))
+          ) > 0.5
+        for: 10m
+        labels: {severity: warn}
+        annotations:
+          summary: The p95 latency of /predict is above 0.5 seconds.
+          description: Scoring has been slow for 10 minutes. Check for a larger batch size, CPU limits, or load on the host.
+          runbook_url: docs/RUNBOOK.md#high-latency
+
+      - alert: ObservationSinkFailing
+        expr: increase(observation_sink_failures_total{job="model-service"}[15m]) > 0
+        labels: {severity: warn}
+        annotations:
+          summary: Prediction observations could not be written.
+          description: Inference is unaffected, but no data is reaching the drift and label evaluation, which will see gaps. Check the observation volume for space and permissions.
+          runbook_url: docs/RUNBOOK.md#observation-sink-failing
+
+  - name: model-data
+    rules:
+      - alert: DataDriftDetected
+        expr: model_window_status{job="drift_report", status="drift"} == 1
+        labels: {severity: warn}
+        annotations:
+          summary: The latest window's inputs have drifted from the reference.
+          description: At least 30% of model inputs differ from the reference. This does not show that the model is less accurate; only labelled predictions can show that. Investigate the cause and check label-based performance.
+          runbook_url: docs/RUNBOOK.md#data-drift-detected
+
+      - alert: ModelPerformanceDegraded
+        expr: model_performance_status{job="delayed_evaluation", status="degraded"} == 1
+        labels: {severity: warn}
+        annotations:
+          summary: Labelled predictions show the model performing worse than the reference.
+          description: ROC AUC on labelled rows is more than 0.08 below the reference baseline, at the label coverage shown on the dashboard. This is measured on outcomes, not inferred from input drift. Check what changed in the inputs and the model, then decide on a rollback or retrain through the normal release process.
+          runbook_url: docs/RUNBOOK.md#model-performance-degraded
+
+      - alert: DataQualityHardFailure
+        expr: model_window_status{job="drift_report", status="invalid_input"} == 1
+        labels: {severity: page}
+        annotations:
+          summary: The latest window failed a hard data-quality check.
+          description: A column is missing or holds unparseable values, so drift was not computed for the window and its predictions cannot be trusted. Find which check failed in the JSON report.
+          runbook_url: docs/RUNBOOK.md#data-quality-hard-failure
+
+      - alert: DataQualityWarning
+        expr: model_window_quality_status{job="drift_report", status="warning"} == 1
+        labels: {severity: warn}
+        annotations:
+          summary: The latest window has data-quality warnings.
+          description: Unseen categories, out-of-range values, missing values or duplicate event IDs exceeded their thresholds. Drift was still computed. See which issue in the JSON report.
+          runbook_url: docs/RUNBOOK.md#data-quality-warning

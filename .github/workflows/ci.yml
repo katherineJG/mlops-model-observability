@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Actions are pinned to full commit SHAs (tags can be moved); the release is in the comment.
+# Same pins as the Model Serving API repo. Bumping one is a deliberate edit.
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.1"
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy app monitoring tests
+      # Unit and contract tests. The Docker stack tests are skipped here and run in the next job.
+      - run: uv run python -m pytest -v
+
+  stack:
+    runs-on: ubuntu-24.04
+    needs: checks
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.1"
+      - run: uv sync --locked
+      # Builds the service image and starts Prometheus, Pushgateway and Grafana from compose.yaml,
+      # runs promtool on the config and rules, sends traffic, runs the drift and performance jobs,
+      # then breaks and restores the service. Nothing is pushed or published.
+      - name: Stack tests
+        env:
+          RUN_STACK_TESTS: "1"
+        run: uv run python -m pytest tests/integration -v

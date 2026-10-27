@@ -1,0 +1,13 @@
+# Keep the build context to what the image needs: app/, models/ and the dependency files.
+# Every dot-folder (.git, .venv, caches, local tooling) is left out.
+.*
+**/__pycache__
+tests
+docs
+monitoring
+reference
+reports
+observations
+prometheus
+grafana
+dashboards

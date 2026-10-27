@@ -1,0 +1,25 @@
+{
+  "model_id": "churn-v1",
+  "model_version": "1",
+  "artifact": "model.joblib",
+  "sha256": "d45a06e125e2986242955ffcd6a1b5e59b6cb1f8fe0a86c301a55e280f9a614d",
+  "format": "joblib (pickle): trusted input only, checksum verified before load",
+  "trained_with": {"scikit_learn": "1.9.1", "joblib": "1.6.0", "python": "3.12"},
+  "source": "Reproducible ML Training Pipeline, models/candidate.joblib (synthetic data, seed 42)",
+  "decision_threshold": 0.5,
+  "features": {
+    "senior_citizen": {"type": "int", "allowed": [0, 1]},
+    "tenure_months": {"type": "int", "min": 0, "max": 72},
+    "monthly_charges": {"type": "float", "min": 0},
+    "total_charges": {"type": "float", "min": 0},
+    "gender": {"type": "category", "allowed": ["female", "male"]},
+    "partner": {"type": "category", "allowed": ["yes", "no"]},
+    "contract": {"type": "category", "allowed": ["month-to-month", "one-year", "two-year"]},
+    "internet_service": {"type": "category", "allowed": ["dsl", "fiber", "none"]},
+    "payment_method": {
+      "type": "category",
+      "allowed": ["card", "bank-transfer", "electronic-check", "mailed-check"]
+    },
+    "paperless_billing": {"type": "category", "allowed": ["yes", "no"]}
+  }
+}

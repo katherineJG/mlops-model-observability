@@ -1,0 +1,58 @@
+# Local stack: `docker compose up --build -d`, then
+#   service     http://127.0.0.1:8000   (POST /predict, GET /metrics)
+#   prometheus  http://127.0.0.1:9090
+#   grafana     http://127.0.0.1:3000   (anonymous viewer; admin password is local-only, see below)
+# Everything binds to loopback because none of it is authenticated for real use.
+# Images are pinned by digest; bumping one is a deliberate edit (see docs/ARCHITECTURE.md).
+services:
+  service:
+    build:
+      context: .
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-local}
+    image: mlops-model-observability:local
+    ports:
+      - "127.0.0.1:8000:8000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - observations:/data/observations
+    environment:
+      LOG_LEVEL: INFO
+
+  prometheus:
+    image: prom/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=2d
+    depends_on: [service, pushgateway]
+
+  pushgateway:
+    image: prom/pushgateway:v1.11.4@sha256:91a56b89b97dd8a5e1e4fa8b5bbbd86dd57a87a2a3cee3a3ce3368b40ef158ef
+    ports:
+      - "127.0.0.1:9091:9091"
+
+  grafana:
+    image: grafana/grafana:13.2.4@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_PASSWORD: local-demo-only  # not a secret: loopback-only demo stack
+      GF_USERS_DEFAULT_THEME: light  # white background, as in the design system
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
+
+volumes:
+  observations:

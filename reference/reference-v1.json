@@ -1,0 +1,27 @@
+{
+  "version": "reference-v1",
+  "rows": 5000,
+  "columns": [
+    "gender",
+    "senior_citizen",
+    "partner",
+    "tenure_months",
+    "contract",
+    "internet_service",
+    "payment_method",
+    "paperless_billing",
+    "monthly_charges",
+    "total_charges",
+    "churn",
+    "churn_probability"
+  ],
+  "generator": "monitoring.synthetic.generate (copy of Project 01 generate_synthetic)",
+  "seed": 42,
+  "n_rows": 5000,
+  "equals": "Project 01 data/raw/raw.csv feature and churn columns, row for row (compared when this reference was created; customer_id is deliberately not kept)",
+  "model_id": "churn-v1",
+  "model_version": "1",
+  "model_sha256": "d45a06e125e2986242955ffcd6a1b5e59b6cb1f8fe0a86c301a55e280f9a614d",
+  "csv_sha256": "76d3587aef7d2a78e42986d772ef1c2a02e8fc4d57b696d2030ec3ae9075dbd2",
+  "synthetic": true
+}

@@ -1,0 +1,20 @@
+# Python tooling
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Local environment files
+*.env
+.env*
+
+# Generated output: reports are not committed, except the examples that tests regenerate and compare
+reports/*
+!reports/.gitkeep
+!reports/examples/
+
+# Runtime and simulation data
+observations/
+sim/

@@ -1,0 +1,222 @@
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: ServiceDown fires after 2 minutes of failed scrapes
+    interval: 1m
+    input_series:
+      - series: 'up{job="model-service", instance="service:8000"}'
+        values: "1 1 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ServiceDown
+        exp_alerts: []   # failing for only one evaluation: still pending
+      - eval_time: 5m
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels: {severity: page, job: model-service, instance: "service:8000"}
+            exp_annotations:
+              summary: "The model service cannot be scraped."
+              description: "Prometheus has failed to scrape the service for 2 minutes, so it is down or unreachable. Predictions are not being served. Check the container first."
+              runbook_url: "docs/RUNBOOK.md#service-down"
+
+  - name: ModelNotLoaded fires when the gauge stays 0
+    interval: 1m
+    input_series:
+      - series: 'model_loaded{job="model-service", instance="service:8000"}'
+        values: "0 0 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ModelNotLoaded
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: ModelNotLoaded
+        exp_alerts:
+          - exp_labels: {severity: page, job: model-service, instance: "service:8000"}
+            exp_annotations:
+              summary: "The service is up but has no verified model."
+              description: "The service is alive but not ready, and /predict returns 503. The model artifact failed verification at startup. Read the model load failed reason in the service log."
+              runbook_url: "docs/RUNBOOK.md#model-not-loaded"
+
+  - name: ModelNotLoaded stays quiet when the model is loaded
+    interval: 1m
+    input_series:
+      - series: 'model_loaded{job="model-service", instance="service:8000"}'
+        values: "1x10"
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: ModelNotLoaded
+        exp_alerts: []
+
+  - name: Error ratio of 10 percent fires, 0 percent does not
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{job="model-service", route="/predict", status_class="2xx"}'
+        values: "0+90x20"
+      - series: 'http_requests_total{job="model-service", route="/predict", status_class="5xx"}'
+        values: "0+10x20"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ServiceErrorRatioHigh
+        exp_alerts: []   # over the threshold but not yet for 5 minutes
+      - eval_time: 12m
+        alertname: ServiceErrorRatioHigh
+        exp_alerts:
+          - exp_labels: {severity: page}
+            exp_annotations:
+              summary: "More than 2% of requests are failing with a server error."
+              description: "The 5xx ratio has been above 2% for 5 minutes. Callers are being hurt now. Find the failing route and the error in the service log."
+              runbook_url: "docs/RUNBOOK.md#elevated-errors"
+
+  - name: Error ratio of 1 percent does not fire
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{job="model-service", route="/predict", status_class="2xx"}'
+        values: "0+99x20"
+      - series: 'http_requests_total{job="model-service", route="/predict", status_class="5xx"}'
+        values: "0+1x20"
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: ServiceErrorRatioHigh
+        exp_alerts: []
+
+  - name: Slow predict requests fire the latency alert after 10 minutes
+    interval: 1m
+    input_series:
+      # every request takes between 0.5 and 1 second, so p95 is above 0.5
+      - series: 'http_request_duration_seconds_bucket{job="model-service", route="/predict", le="0.5"}'
+        values: "0+0x25"
+      - series: 'http_request_duration_seconds_bucket{job="model-service", route="/predict", le="1.0"}'
+        values: "0+100x25"
+      - series: 'http_request_duration_seconds_bucket{job="model-service", route="/predict", le="+Inf"}'
+        values: "0+100x25"
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: ServiceLatencyHigh
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: ServiceLatencyHigh
+        exp_alerts:
+          - exp_labels: {severity: warn}
+            exp_annotations:
+              summary: "The p95 latency of /predict is above 0.5 seconds."
+              description: "Scoring has been slow for 10 minutes. Check for a larger batch size, CPU limits, or load on the host."
+              runbook_url: "docs/RUNBOOK.md#high-latency"
+
+  - name: Fast predict requests do not fire the latency alert
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{job="model-service", route="/predict", le="0.5"}'
+        values: "0+100x25"
+      - series: 'http_request_duration_seconds_bucket{job="model-service", route="/predict", le="+Inf"}'
+        values: "0+100x25"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ServiceLatencyHigh
+        exp_alerts: []
+
+  - name: Sink failures fire at once and clear after 15 minutes
+    interval: 1m
+    input_series:
+      - series: 'observation_sink_failures_total{job="model-service", instance="service:8000"}'
+        values: "0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ObservationSinkFailing
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: ObservationSinkFailing
+        exp_alerts:
+          - exp_labels: {severity: warn, job: model-service, instance: "service:8000"}
+            exp_annotations:
+              summary: "Prediction observations could not be written."
+              description: "Inference is unaffected, but no data is reaching the drift and label evaluation, which will see gaps. Check the observation volume for space and permissions."
+              runbook_url: "docs/RUNBOOK.md#observation-sink-failing"
+      - eval_time: 22m
+        alertname: ObservationSinkFailing
+        exp_alerts: []
+
+  - name: Drift status raises DataDriftDetected only for the drift state
+    interval: 1m
+    input_series:
+      - series: 'model_window_status{job="drift_report", status="drift"}'
+        values: "1 1 1"
+      - series: 'model_window_status{job="drift_report", status="no_drift"}'
+        values: "0 0 0"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: DataDriftDetected
+        exp_alerts:
+          - exp_labels: {severity: warn, job: drift_report, status: drift}
+            exp_annotations:
+              summary: "The latest window's inputs have drifted from the reference."
+              description: "At least 30% of model inputs differ from the reference. This does not show that the model is less accurate; only labelled predictions can show that. Investigate the cause and check label-based performance."
+              runbook_url: "docs/RUNBOOK.md#data-drift-detected"
+
+  - name: No drift raises nothing
+    interval: 1m
+    input_series:
+      - series: 'model_window_status{job="drift_report", status="drift"}'
+        values: "0 0 0"
+      - series: 'model_window_status{job="drift_report", status="invalid_input"}'
+        values: "0 0 0"
+      - series: 'model_window_quality_status{job="drift_report", status="warning"}'
+        values: "0 0 0"
+    alert_rule_test:
+      - {eval_time: 1m, alertname: DataDriftDetected, exp_alerts: []}
+      - {eval_time: 1m, alertname: DataQualityHardFailure, exp_alerts: []}
+      - {eval_time: 1m, alertname: DataQualityWarning, exp_alerts: []}
+
+  - name: Hard data-quality failure and warning
+    interval: 1m
+    input_series:
+      - series: 'model_window_status{job="drift_report", status="invalid_input"}'
+        values: "1 1"
+      - series: 'model_window_quality_status{job="drift_report", status="warning"}'
+        values: "1 1"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: DataQualityHardFailure
+        exp_alerts:
+          - exp_labels: {severity: page, job: drift_report, status: invalid_input}
+            exp_annotations:
+              summary: "The latest window failed a hard data-quality check."
+              description: "A column is missing or holds unparseable values, so drift was not computed for the window and its predictions cannot be trusted. Find which check failed in the JSON report."
+              runbook_url: "docs/RUNBOOK.md#data-quality-hard-failure"
+      - eval_time: 1m
+        alertname: DataQualityWarning
+        exp_alerts:
+          - exp_labels: {severity: warn, job: drift_report, status: warning}
+            exp_annotations:
+              summary: "The latest window has data-quality warnings."
+              description: "Unseen categories, out-of-range values, missing values or duplicate event IDs exceeded their thresholds. Drift was still computed. See which issue in the JSON report."
+              runbook_url: "docs/RUNBOOK.md#data-quality-warning"
+
+  - name: Performance degraded fires only for the degraded state
+    interval: 1m
+    input_series:
+      - series: 'model_performance_status{job="delayed_evaluation", status="degraded"}'
+        values: "1 1"
+      - series: 'model_performance_status{job="delayed_evaluation", status="ok"}'
+        values: "0 0"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ModelPerformanceDegraded
+        exp_alerts:
+          - exp_labels: {severity: warn, job: delayed_evaluation, status: degraded}
+            exp_annotations:
+              summary: "Labelled predictions show the model performing worse than the reference."
+              description: "ROC AUC on labelled rows is more than 0.08 below the reference baseline, at the label coverage shown on the dashboard. This is measured on outcomes, not inferred from input drift. Check what changed in the inputs and the model, then decide on a rollback or retrain through the normal release process."
+              runbook_url: "docs/RUNBOOK.md#model-performance-degraded"
+
+  - name: Healthy or unjudged performance raises nothing
+    interval: 1m
+    input_series:
+      - series: 'model_performance_status{job="delayed_evaluation", status="degraded"}'
+        values: "0 0"
+      - series: 'model_performance_status{job="delayed_evaluation", status="insufficient_labels"}'
+        values: "1 1"
+    alert_rule_test:
+      - {eval_time: 1m, alertname: ModelPerformanceDegraded, exp_alerts: []}
