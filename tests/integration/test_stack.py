@@ -201,9 +201,16 @@ def test_service_metrics_reach_prometheus(stack: Path) -> None:
 
 
 def test_alert_rules_are_loaded_and_healthy(stack: Path) -> None:
-    _, body = http(f"{PROM}/api/v1/rules")
-    rules = [r for g in body["data"]["groups"] for r in g["rules"]]
-    assert len(rules) == 9 and all(r["health"] == "ok" for r in rules)
+    # A rule's health is "unknown" until its group has been evaluated once (every 15 s), which a
+    # slow runner may not have reached yet. Wait for that, and name the rules if it never happens.
+    deadline = time.monotonic() + 60
+    while True:
+        _, body = http(f"{PROM}/api/v1/rules")
+        health = {r["name"]: r["health"] for g in body["data"]["groups"] for r in g["rules"]}
+        if len(health) == 9 and set(health.values()) == {"ok"}:
+            break
+        assert time.monotonic() < deadline, f"alert rules not healthy after 60 s: {health}"
+        time.sleep(3)
 
 
 def test_drift_result_is_pushed_and_the_alert_fires(stack: Path) -> None:

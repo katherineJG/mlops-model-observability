@@ -140,7 +140,7 @@ What the simulations establish (seed 7, 500 observations, 412 labelled):
 | concept_shift | none | degraded (0.196) |
 | schema_break | not computed | not computed |
 
-So drift can come with a fall in accuracy, without one, and accuracy can fall with no drift. The first run of `input_shift` contradicted my own expectation that it would show no loss: the shifted population is narrower, so ranking quality drops even though how churn depends on the inputs is unchanged. `benign_shift`, which moves only inputs the label ignores, was added to show drift without loss.
+So drift can come with a fall in accuracy, without one, and accuracy can fall with no drift. The first run of `input_shift` contradicted the initial expectation that it would show no loss: the shifted population is narrower, so ranking quality drops even though how churn depends on the inputs is unchanged. `benign_shift`, which moves only inputs the label ignores, was added to show drift without loss.
 
 Limits:
 - `concept_shift` is extreme (the relationship is reversed). It shows the mechanism, not a realistic magnitude.
