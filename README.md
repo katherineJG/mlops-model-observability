@@ -4,7 +4,7 @@ A monitoring layer for an ML inference service: a churn model served over HTTP, 
 
 The idea it is built around: **drift is not proof that a model got worse.** Inputs can move and accuracy hold, accuracy can fall while the inputs look normal, and sometimes both happen together. Only predictions that have a ground-truth label can tell these apart, and labels arrive late. So the project keeps four kinds of signal apart and never reports one as another.
 
-This is project 3 of a series. Project 1 trains the model, project 2 serves it. `app/` here is a copy of project 2's service plus the instrumentation this project adds, so the repo runs on its own.
+This is project 3 of a series. Project 1, [mlops-reproducible-training](https://github.com/katherineJG/mlops-reproducible-training), trains the model; project 2, [mlops-model-serving](https://github.com/katherineJG/mlops-model-serving), serves it. `app/` here is a copy of project 2's service plus the instrumentation this project adds, so the repo runs on its own.
 
 ## The four layers
 
@@ -87,7 +87,7 @@ If you evaluate the same window before the labels have arrived (`--as-of 2026-10
 
 ## Thresholds
 
-All are initial values that I then measured on healthy synthetic windows; the measurements and their costs are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#3-signal-catalogue) sections 3.5 and 3.7.
+All are initial values that were then measured on healthy synthetic windows; the measurements and their costs are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#3-signal-catalogue) sections 3.5 and 3.7.
 
 | Signal | Rule | Value |
 |---|---|---|
@@ -102,9 +102,9 @@ All are initial values that I then measured on healthy synthetic windows; the me
 
 What the calibration showed: with a 0.05 AUC drop and 200 labels, 13% of healthy windows would have been flagged, which is too noisy. At 0.08 and 300 labels it is about 1%. The price is that a real degradation smaller than about 0.08 AUC goes unflagged.
 
-## Design choices, and what I decided against
+## Design choices, and the alternatives not taken
 
-- **Drift tests written out, Evidently for the report.** The JSON result comes from explicit KS and chi-square tests so the thresholds are visible and testable; Evidently draws the HTML for people. Using Evidently's own flags for everything was the alternative. It would have been less code, but I could not state or test the rule being applied. The two can disagree, and the JSON is the one to trust.
+- **Drift tests written out, Evidently for the report.** The JSON result comes from explicit KS and chi-square tests so the thresholds are visible and testable; Evidently draws the HTML for people. Using Evidently's own flags for everything was the alternative. It would have been less code, but the rule being applied could not be stated or tested. The two can disagree, and the JSON is the one to trust.
 - **Pushgateway for the offline jobs.** Prometheus cannot scrape a batch job. Alternatives were the node-exporter textfile collector (another service, files shared across containers) or having Grafana read the JSON reports (loses alerts). The cost of Pushgateway is that results stay until the next run, so a stopped job leaves a stale alert; there is no staleness alert because nothing schedules the jobs here.
 - **JSONL files behind a small `ObservationSink` interface.** A database would handle concurrent writers and queries, but would be a service to run for a demo. The sink is replaceable; its limit (one writer process per directory) is stated in the code.
 - **A copy of project 2's service, not an import.** Each repo stays runnable on its own. The cost is that fixes to the serving code have to be made twice.
