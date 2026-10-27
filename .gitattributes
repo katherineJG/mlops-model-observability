@@ -1,2 +1,7 @@
 reference/* -text
 models/**/*.json -text
+
+# The example reports are produced by the commands in the README. The HTML ones inline a large
+# JavaScript bundle (about 4 MB each), which would otherwise make GitHub report this repo as
+# almost entirely HTML. Marking them generated removes them from the language bar and diff views.
+reports/examples/** linguist-generated
